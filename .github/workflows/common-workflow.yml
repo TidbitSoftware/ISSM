@@ -6,7 +6,7 @@ on:
       os:
         required: true
         type: string
-      build_type: 
+      build_type:
         required: true
         type: string
       build_command:
@@ -29,7 +29,7 @@ on:
         type: string
 env:
   ISSM_DIR: ${{ github.workspace }}
-  
+
 jobs:
   build:
     name: build-ISSM-${{ inputs.os }}-${{ inputs.build_type}}
@@ -39,7 +39,7 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-          
+
       - name: Cache externalpackages
         uses: actions/cache@v3
         id: cache-externalpackages
@@ -50,7 +50,7 @@ jobs:
             ${{ env.ISSM_DIR }}/externalpackages/
             !${{ env.ISSM_DIR }}/externalpackages/petsc/src/
           key: ${{ runner.os }}-build-${{ env.cache-name }}
-          
+
       - name: Prepare External Packages
         if: ${{ steps.cache-externalpackages.outputs.cache-hit != 'true'}}
         run: |
@@ -92,17 +92,17 @@ jobs:
 
       - name: Compress ISSM artifact
         run: tar --exclude='./externalpackages/petsc/src' -cvf ISSM_artifact-${{ runner.os }}-${{ inputs.build_type}}.tar -C ${{ env.ISSM_DIR }}/ .
-        
+
       - name: Upload ISSM artifact
         uses: actions/upload-artifact@v4
         with:
           name: ISSM-${{ runner.os }}-${{ inputs.build_type }}
           path: ISSM_artifact-${{ runner.os }}-${{ inputs.build_type }}.tar
-          compression-level: 1          
+          compression-level: 1
       - id: creatTestMatrix
         run: |
           TESTS='${{ inputs.test_cases }}'
-          echo "test_output=$(jq -cn --argjson values "$TESTS" '{test_cases: $values}')" >> $GITHUB_OUTPUT  
+          echo "test_output=$(jq -cn --argjson values "$TESTS" '{test_cases: $values}')" >> $GITHUB_OUTPUT
   test:
     runs-on: ${{ inputs.os }}
     needs: build
@@ -115,14 +115,14 @@ jobs:
         with:
           name: ISSM-${{ runner.os }}-${{ inputs.build_type}}
           path: ${{ env.ISSM_DIR }}
-      
-      - name: uncompress ISSM artifact
+
+      - name: Unpack ISSM artifact
         run: |
           tar -xvf ISSM_artifact-${{ runner.os }}-${{ inputs.build_type}}.tar
           source $ISSM_DIR/etc/environment.sh
         working-directory: ${{ env.ISSM_DIR }}
         shell: 'bash'
-          
+
       - name: Get MATLAB
         if: ${{inputs.interface == 'matlab'}}
         id:   setup-matlab
@@ -130,7 +130,7 @@ jobs:
         with:
           release: R2023b
           cache: true
-          
+
       - name: Creating matlab_ci.m
         if: ${{inputs.interface == 'matlab'}}
         run: |
@@ -143,23 +143,23 @@ jobs:
           devpath;
 
           % Run tests
-          runme('exclude',[IdFromString('Dakota')],${{inputs.additional_options}} 'id',[${{matrix.test_cases}}],'quitonerror',1);
+          runme('exclude',[IdFromString('Dakota')],${{inputs.additional_options}} 'id',[${{inputs.test_cases}}],'quitonerror',1);
           quit(0);
           EOF
           cat ${ISSM_DIR}/matlab_ci.m
-          
+
       - name: Get run-matlab-command
         if: ${{inputs.interface == 'matlab'}}
         run: |
           wget -O /usr/local/bin/run-matlab-command https://ssd.mathworks.com/supportfiles/ci/run-matlab-command/v2/glnxa64/run-matlab-command
           chmod +x /usr/local/bin/run-matlab-command
-          
+
       - name: Run MATLAB tests
         if: ${{inputs.interface == 'matlab'}}
         run: |
           source $ISSM_DIR/etc/environment.sh
           LD_PRELOAD=/lib/x86_64-linux-gnu/libstdc++.so.6:$ISSM_DIR/externalpackages/petsc/install/lib/libmpi.so:$ISSM_DIR/externalpackages/petsc/install/lib/libmpifort.so run-matlab-command "matlab_ci"
-  
+
       - name: Prepare python
         if: contains( inputs.interface, 'python')
         uses: actions/setup-python@v5
@@ -182,4 +182,4 @@ jobs:
           export PYTHONUNBUFFERED=1
           source $ISSM_DIR/etc/environment.sh
           cd $ISSM_DIR/test/NightlyRun
-          LD_PRELOAD=/lib/x86_64-linux-gnu/libstdc++.so.6:$ISSM_DIR/externalpackages/petsc/install/lib/libmpi.so:$ISSM_DIR/externalpackages/petsc/install/lib/libmpifort.so ./runme.py --output=nightly --rank=1 --numprocs=1 --id {{matrix.test_cases}} --exclude Dakota 234 418 420
+          LD_PRELOAD=/lib/x86_64-linux-gnu/libstdc++.so.6:$ISSM_DIR/externalpackages/petsc/install/lib/libmpi.so:$ISSM_DIR/externalpackages/petsc/install/lib/libmpifort.so ./runme.py --output=nightly --rank=1 --numprocs=1 --id {{inputs.test_cases}} --exclude Dakota 234 418 420
