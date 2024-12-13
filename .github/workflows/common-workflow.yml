@@ -37,10 +37,10 @@ jobs:
     outputs:
       test_matrix: ${{ steps.createTestMatrix.outputs.test_output }}
     steps:
-      - name: Check out repository code
+      - name: Check out copy of repository
         uses: actions/checkout@v4
 
-      - name: Cache externalpackages
+      - name: Cache external packages
         uses: actions/cache@v3
         id: cache-externalpackages
         env:
@@ -51,7 +51,7 @@ jobs:
             !${{ env.ISSM_DIR }}/externalpackages/petsc/src/
           key: ${{ runner.os }}-build-${{ env.cache-name }}
 
-      - name: Prepare External Packages
+      - name: Prepare external packages
         if: ${{ steps.cache-externalpackages.outputs.cache-hit != 'true' }}
         run: |
           ${{ inputs.ext_install_command }}
@@ -64,21 +64,21 @@ jobs:
           release: R2023b
           cache: true
 
-      - name: Prepare python
+      - name: Prepare Python
         if: contains( inputs.interface, 'python')
         uses: actions/setup-python@v5
         id: setup-python
         with:
           python-version: ${{ inputs.python_version }}
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         if: contains(inputs.interface, 'python')
         run: |
           sudo apt-get install libpython${{ inputs.python_version }}-dev
           sudo apt-get install python3-dev
           python -m pip install --upgrade pip
           sudo apt-get update && sudo apt-get install -y python-tk python3-tk
-          python -m pip install numpy scipy matplotlib nose
+          python -m pip install numpy==2.1.0 scipy matplotlib nose
 
       - name: Build ISSM
         run: |
@@ -160,19 +160,19 @@ jobs:
           source $ISSM_DIR/etc/environment.sh
           LD_PRELOAD=/lib/x86_64-linux-gnu/libstdc++.so.6:$ISSM_DIR/externalpackages/petsc/install/lib/libmpi.so:$ISSM_DIR/externalpackages/petsc/install/lib/libmpifort.so run-matlab-command "matlab_ci"
 
-      - name: Prepare python
+      - name: Prepare Python
         if: contains(inputs.interface, 'python')
         uses: actions/setup-python@v5
         id: setup-python
         with:
           python-version: ${{ inputs.python_version }}
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         if: contains( inputs.interface, 'python')
         run: |
           python -m pip install --upgrade pip
           sudo apt-get update && sudo apt-get install -y python-tk python3-tk
-          python -m pip install numpy scipy matplotlib nose netCDF4
+          python -m pip install numpy==2.1.0 scipy matplotlib nose netCDF4
 
       - name: Run Python tests
         if: contains(inputs.interface, 'python')
