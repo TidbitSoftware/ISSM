@@ -4,7 +4,7 @@ import numpy as np
 def GetAreas(index, x, y, z=np.array([])):
     """GetAreas - compute areas or volumes of elements
 
-    Compute areas of triangular elements or volumes of pentahedrons
+    compute areas of triangular elements or volumes of pentahedrons
 
     Usage:
         areas = GetAreas(index, x, y)
@@ -16,17 +16,17 @@ def GetAreas(index, x, y, z=np.array([])):
     """
 
     # Get number of elements and number of nodes
-    nels = np.size(index, axis=0)
-    nods = np.size(x)
+    nels = np.shape(index)[0]
+    nods = np.shape(x)[0]
 
     # Some checks
-    if (y and np.size(y) != nods) or (z and np.size(z) != nods):
+    if np.shape(y)[0] != nods or (z and np.shape(z)[0] != nods):
         raise TypeError('GetAreas error message: x, y and z do not have the same length.')
     if np.max(index) > nods:
         raise TypeError('GetAreas error message: index should not have values above {}.'.format(nods))
-    if (not z and np.size(index, axis=1) != 3):
+    if (not z and np.shape(index)[1] != 3):
         raise TypeError('GetAreas error message: index should have 3 columns for 2d meshes.')
-    if (z and np.size(index, axis=1) != 6):
+    if (z and np.shape(index)[1] != 6):
         raise TypeError('GetAreas error message: index should have 6 columns for 3d meshes.')
 
     # Initialization
