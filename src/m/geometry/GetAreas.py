@@ -22,6 +22,7 @@ def GetAreas(index, x, y, z=np.array([])):
     nods = np.size(x)
 
     #some checks
+    print(y)
     if np.size(y) != nods or (z and np.size(z) != nods):
         raise TypeError("GetAreas error message: x, y and z do not have the same length.")
     if np.max(index) > nods:
