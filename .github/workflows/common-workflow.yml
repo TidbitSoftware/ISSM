@@ -32,7 +32,7 @@ env:
 
 jobs:
   build:
-    name: build-ISSM-${{ inputs.os }}-${{ inputs.build_type}}
+    name: build-ISSM-${{ inputs.os }}-${{ inputs.build_type }}
     runs-on: ${{ inputs.os }}
     outputs:
       test_matrix: ${{ steps.createTestMatrix.outputs.test_output }}
@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v3
         id: cache-externalpackages
         env:
-          cache-name: cache-externalpackages-${{ inputs.build_type}}
+          cache-name: cache-externalpackages-${{ inputs.build_type }}
         with:
           path: |
             ${{ env.ISSM_DIR }}/externalpackages/
@@ -52,13 +52,13 @@ jobs:
           key: ${{ runner.os }}-build-${{ env.cache-name }}
 
       - name: Prepare External Packages
-        if: ${{ steps.cache-externalpackages.outputs.cache-hit != 'true'}}
+        if: ${{ steps.cache-externalpackages.outputs.cache-hit != 'true' }}
         run: |
           ${{ inputs.ext_install_command }}
 
       - name: Get MATLAB
-        if: ${{inputs.interface == 'matlab'}}
-        id:   setup-matlab
+        if: ${{ inputs.interface == 'matlab' }}
+        id: setup-matlab
         uses: matlab-actions/setup-matlab@v2
         with:
           release: R2023b
@@ -72,7 +72,7 @@ jobs:
           python-version: ${{ inputs.python_version }}
 
       - name: Install dependencies
-        if: contains( inputs.interface, 'python')
+        if: contains(inputs.interface, 'python')
         run: |
           sudo apt-get install libpython${{ inputs.python_version }}-dev
           sudo apt-get install python3-dev
@@ -85,13 +85,13 @@ jobs:
           export MATLAB_ROOT=${{ steps.setup-matlab.outputs.matlabroot }}
           export PYTHON_ROOT=${{ env.pythonLocation }}
           export NUMPY_ROOT=${{ env.LD_LIBRARY_PATH }}/python3.11/site-packages/numpy
-          ${{ inputs.build_command}}
+          ${{ inputs.build_command }}
 
       - name: Compile ISSM
         run: make -j4 install
 
       - name: Compress ISSM artifact
-        run: tar --exclude='./externalpackages/petsc/src' -cvf ISSM_artifact-${{ runner.os }}-${{ inputs.build_type}}.tar -C ${{ env.ISSM_DIR }}/ .
+        run: tar --exclude='./externalpackages/petsc/src' -cvf ISSM_artifact-${{ runner.os }}-${{ inputs.build_type }}.tar -C ${{ env.ISSM_DIR }}/ .
 
       - name: Upload ISSM artifact
         uses: actions/upload-artifact@v4
@@ -113,26 +113,26 @@ jobs:
       - name: Download ISSM artifact
         uses: actions/download-artifact@v4
         with:
-          name: ISSM-${{ runner.os }}-${{ inputs.build_type}}
+          name: ISSM-${{ runner.os }}-${{ inputs.build_type }}
           path: ${{ env.ISSM_DIR }}
 
       - name: Unpack ISSM artifact
         run: |
-          tar -xvf ISSM_artifact-${{ runner.os }}-${{ inputs.build_type}}.tar
+          tar -xvf ISSM_artifact-${{ runner.os }}-${{ inputs.build_type }}.tar
           source $ISSM_DIR/etc/environment.sh
         working-directory: ${{ env.ISSM_DIR }}
         shell: 'bash'
 
       - name: Get MATLAB
-        if: ${{inputs.interface == 'matlab'}}
-        id:   setup-matlab
+        if: ${{ inputs.interface == 'matlab' }}
+        id: setup-matlab
         uses: matlab-actions/setup-matlab@v2
         with:
           release: R2023b
           cache: true
 
       - name: Creating matlab_ci.m
-        if: ${{inputs.interface == 'matlab'}}
+        if: ${{ inputs.interface == 'matlab' }}
         run: |
           cat > ${ISSM_DIR}/matlab_ci.m << EOF
           % Go to the test directory
@@ -143,13 +143,13 @@ jobs:
           devpath;
 
           % Run tests
-          runme('exclude',[IdFromString('Dakota')],${{inputs.additional_options}} 'id',[${{inputs.test_cases}}],'quitonerror',1);
+          runme('exclude',[IdFromString('Dakota')],${{ inputs.additional_options }} 'id',[${{ matrix.test_cases }}],'quitonerror',1);
           quit(0);
           EOF
           cat ${ISSM_DIR}/matlab_ci.m
 
       - name: Get run-matlab-command
-        if: ${{inputs.interface == 'matlab'}}
+        if: ${{ inputs.interface == 'matlab' }}
         run: |
           wget -O /usr/local/bin/run-matlab-command https://ssd.mathworks.com/supportfiles/ci/run-matlab-command/v2/glnxa64/run-matlab-command
           chmod +x /usr/local/bin/run-matlab-command
@@ -161,7 +161,7 @@ jobs:
           LD_PRELOAD=/lib/x86_64-linux-gnu/libstdc++.so.6:$ISSM_DIR/externalpackages/petsc/install/lib/libmpi.so:$ISSM_DIR/externalpackages/petsc/install/lib/libmpifort.so run-matlab-command "matlab_ci"
 
       - name: Prepare python
-        if: contains( inputs.interface, 'python')
+        if: contains(inputs.interface, 'python')
         uses: actions/setup-python@v5
         id: setup-python
         with:
@@ -175,11 +175,11 @@ jobs:
           python -m pip install numpy scipy matplotlib nose netCDF4
 
       - name: Run Python tests
-        if: contains( inputs.interface, 'python')
+        if: contains(inputs.interface, 'python')
         run: |
           export PYTHONPATH="${ISSM_DIR}/src/m/dev:${PYTHONPATH}"
           export PYTHONSTARTUP="${ISSM_DIR}/src/m/dev/devpath.py"
           export PYTHONUNBUFFERED=1
           source $ISSM_DIR/etc/environment.sh
           cd $ISSM_DIR/test/NightlyRun
-          LD_PRELOAD=/lib/x86_64-linux-gnu/libstdc++.so.6:$ISSM_DIR/externalpackages/petsc/install/lib/libmpi.so:$ISSM_DIR/externalpackages/petsc/install/lib/libmpifort.so ./runme.py --output=nightly --rank=1 --numprocs=1 --id ${{matrix.test_cases}} --exclude Dakota 234 418 420
+          LD_PRELOAD=/lib/x86_64-linux-gnu/libstdc++.so.6:$ISSM_DIR/externalpackages/petsc/install/lib/libmpi.so:$ISSM_DIR/externalpackages/petsc/install/lib/libmpifort.so ./runme.py --output=nightly --rank=1 --numprocs=1 --id ${{ matrix.test_cases }} --exclude Dakota 234 418 420
